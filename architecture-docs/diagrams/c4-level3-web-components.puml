@@ -1,99 +1,90 @@
 @startuml
 ' Syntax verified: 2025-10-30
 ' C4 Level 3: Component Diagram - Web Application
-' Shows the internal components of the ASP.NET MVC Web Application
 
-title C4 Level 3: Component Diagram - Web Application Components
+title C4 Level 3 Component Diagram - Web Application Components
 
-!define COMPONENT_BG_COLOR #85BBF0
-!define EXTERNAL_COMPONENT_BG_COLOR #999999
+skinparam component {
+    BackgroundColor<<presentation>> #85BBF0
+    BackgroundColor<<business>> #85BBF0
+    BackgroundColor<<data>> #85BBF0
+    BackgroundColor<<external>> #999999
+    FontColor black
+}
 
-' Container boundary
-package "Web Application\n<size:10>[ASP.NET MVC 4 Container]</size>" {
+skinparam database {
+    BackgroundColor #999999
+    FontColor white
+}
 
-    ' Presentation Layer Components
+package "Web Application [ASP.NET MVC 4 Container]" {
+
     package "Presentation Layer" {
-        rectangle "==Home Controller\n<size:10>[MVC Controller]</size>\n\nHandles landing page\nDefault action" as HomeCtrl #COMPONENT_BG_COLOR
-
-        rectangle "==SiteLayout Controller\n<size:10>[MVC Controller]</size>\n\nProvides header, footer,\nand content layout\ncomponents" as LayoutCtrl #COMPONENT_BG_COLOR
-
-        rectangle "==Error Controller\n<size:10>[MVC Controller]</size>\n\nHandles 404 and 500\nerror pages" as ErrorCtrl #COMPONENT_BG_COLOR
-
-        rectangle "==Razor Views\n<size:10>[View Engine]</size>\n\nRenders HTML pages\nwith Razor syntax" as Views #COMPONENT_BG_COLOR
-
-        rectangle "==View Models\n<size:10>[Data Transfer Objects]</size>\n\nSiteLayoutModel\nwith product categories" as ViewModels #COMPONENT_BG_COLOR
+        component [Home Controller] as home <<presentation>>
+        component [SiteLayout Controller] as layout <<presentation>>
+        component [Error Controller] as error <<presentation>>
+        component [Razor Views] as views <<presentation>>
+        component [View Models] as viewmodels <<presentation>>
     }
 
-    ' Business Logic Layer Components
     package "Business Logic Layer" {
-        rectangle "==Category Manager\n<size:10>[Static Business Logic]</size>\n\nGetMainCategories()\nGetCategoryByName()\nGetProductSubcategoryByName()" as CatMgr #COMPONENT_BG_COLOR
-
-        rectangle "==Product Manager\n<size:10>[Static Business Logic]</size>\n\nGetProductByName()\nGetProductByCategory()\nGetProductColor/Size/Weight()\nFilter products" as ProdMgr #COMPONENT_BG_COLOR
+        component [Category Manager] as catmgr <<business>>
+        component [Product Manager] as prodmgr <<business>>
     }
 
-    ' Data Access Layer Components
     package "Data Access Layer" {
-        rectangle "==Common\n<size:10>[Static Factory]</size>\n\nDataEntities property\nReturns new DbContext\ninstances" as Common #COMPONENT_BG_COLOR
-
-        rectangle "==CYCLE_STORE\nEntities\n<size:10>[EF DbContext]</size>\n\nEntity Framework context\nProducts, ProductCategories,\nProductSubcategories" as DbContext #COMPONENT_BG_COLOR
-
-        rectangle "==Entity Models\n<size:10>[Domain Entities]</size>\n\nProduct\nProductCategory\nProductSubcategory\n(Auto-generated from EDMX)" as Entities #COMPONENT_BG_COLOR
+        component [Common] as common <<data>>
+        component [CYCLE_STORE\nEntities] as context <<data>>
+        component [Entity Models] as entities <<data>>
     }
 }
 
-' External components
-database "==CYCLE_STORE\nDatabase\n<size:10>[SQL Server]</size>" as Database #EXTERNAL_COMPONENT_BG_COLOR
+database "CYCLE_STORE\nDatabase" as db <<external>>
 
-' Relationships - Presentation to Business
-HomeCtrl -down-> Views : "Renders"
-LayoutCtrl -down-> Views : "Renders"
-LayoutCtrl -down-> CatMgr : "Calls static methods"
-LayoutCtrl --> ViewModels : "Populates"
-ErrorCtrl -down-> Views : "Renders"
+home --> views : Renders
+layout --> views : Renders
+layout --> catmgr : Calls static methods
+layout --> viewmodels : Populates
+error --> views : Renders
 
-' Relationships - Business to Data
-CatMgr -down-> Common : "Accesses\nDataEntities"
-ProdMgr -down-> Common : "Accesses\nDataEntities"
-Common -down-> DbContext : "Returns new\ninstance"
-DbContext --> Entities : "Exposes as\nDbSets"
+catmgr --> common : Accesses\nDataEntities
+prodmgr --> common : Accesses\nDataEntities
+common --> context : Returns new\ninstance
+context --> entities : Exposes as\nDbSets
 
-' Relationships - Data to Database
-DbContext -down-> Database : "Queries via\nEntity Framework\n[LINQ to SQL]"
+context --> db : Queries via\nEntity Framework\n[LINQ to SQL]
 
-note right of HomeCtrl
+note right of home
   **File**: HomeController.cs
   **Namespace**: AdventureWorks.Controllers
   **Actions**: Default()
   **Status**: Minimal implementation
 end note
 
-note right of CatMgr
+note right of catmgr
   **File**: CategoryManager.cs
   **Namespace**: AdventureWorks.Business
   **Pattern**: Static utility class
   **Data Access**: Common.DataEntities
 end note
 
-note right of ProdMgr
+note right of prodmgr
   **File**: ProductManager.cs
   **Namespace**: EpicAdventureWorks
   **WARNING**: Inconsistent namespace
   **Pattern**: Static utility class
   **Mixed Access**: Uses both
-  Common.DataEntities.Products
-  and Common.DataEntities.Product
+  Products and Product
 end note
 
-note right of Common
+note right of common
   **File**: Common.cs
   **Pattern**: Static Factory
   **Anti-pattern**: Creates new
   DbContext per property access
-  (no connection pooling,
-  no DbContext reuse)
 end note
 
-note right of DbContext
+note right of context
   **File**: CycleModel.Context.cs
   **Generated**: Entity Framework T4
   **Connection**: CYCLE_STOREEntities

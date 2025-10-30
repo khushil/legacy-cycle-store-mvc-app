@@ -1,36 +1,71 @@
 @startuml
 ' Syntax verified: 2025-10-30
 ' C4 Level 2: Container Diagram
-' Shows the high-level technology containers of Adventure Works Cycle Store
 
-title C4 Level 2: Container Diagram - Adventure Works Cycle Store
+title C4 Level 2 Container Diagram - Adventure Works Cycle Store
 
-' C4 Colors
-!define PERSON_BG_COLOR #08427B
-!define CONTAINER_BG_COLOR #438DD5
-!define EXTERNAL_CONTAINER_BG_COLOR #999999
-
-' Define Person
-rectangle "==Web User\n<size:10>[Person]</size>\n\nCustomer using the\ne-commerce site" as WebUser #PERSON_BG_COLOR
-
-' System Boundary
-package "Adventure Works Cycle Store\n<size:10>[ASP.NET MVC System]</size>" {
-    rectangle "==Web Application\n<size:10>[ASP.NET MVC 4]</size>\n<size:10>.NET Framework 4.5</size>\n\nProvides product catalog,\ncategory navigation,\nand user authentication\nvia Razor views and\nMVC controllers" as WebApp #CONTAINER_BG_COLOR
+skinparam rectangle {
+    BackgroundColor<<person>> #08427B
+    BackgroundColor<<container>> #438DD5
+    BackgroundColor<<external>> #999999
+    FontColor white
 }
 
-' External Containers
-database "==CYCLE_STORE\nDatabase\n<size:10>[SQL Server Database]</size>\n<size:10>AWS RDS</size>\n\nStores:\n- Product catalog\n- Product categories\n- Product subcategories\n- Product descriptions" as MainDB #EXTERNAL_CONTAINER_BG_COLOR
+skinparam database {
+    BackgroundColor #999999
+    FontColor white
+}
 
-database "==ASPNetDB\nDatabase\n<size:10>[SQL Server Database]</size>\n<size:10>Location Unknown</size>\n\nStores:\n- User accounts\n- Membership data\n- Roles and profiles" as MembershipDB #EXTERNAL_CONTAINER_BG_COLOR
+actor "Web User" as user <<person>>
 
-' Relationships
-WebUser -down-> WebApp : "Browses products,\nsearches catalog,\nauthenticates\n<size:10>[HTTPS]</size>"
+package "Adventure Works Cycle Store System" {
+    rectangle "Web Application" as webapp <<container>> {
+        note as N1
+            ASP.NET MVC 4
+            .NET Framework 4.5
 
-WebApp -down-> MainDB : "Reads product data,\nqueries categories,\nfilters products\n<size:10>[Entity Framework 5]</size>\n<size:10>[ADO.NET Entity Client]</size>"
+            Provides product catalog,
+            category navigation,
+            and user authentication
+            via Razor views and
+            MVC controllers
+        end note
+    }
+}
 
-WebApp -down-> MembershipDB : "Validates credentials,\nmanages sessions\n<size:10>[SQL Membership Provider]</size>\n<size:10>[ADO.NET]</size>"
+database "CYCLE_STORE\nDatabase" as maindb <<external>> {
+    note as N2
+        SQL Server on AWS RDS
 
-note right of WebApp
+        Stores:
+        - Product catalog
+        - Product categories
+        - Product subcategories
+        - Product descriptions
+    end note
+}
+
+database "ASPNetDB\nDatabase" as memberdb <<external>> {
+    note as N3
+        SQL Server
+        Location Unknown
+
+        Stores:
+        - User accounts
+        - Membership data
+        - Roles and profiles
+
+        **MISCONFIGURED**
+    end note
+}
+
+user --> webapp : Browses products,\nsearches catalog,\nauthenticates\n[HTTPS]
+
+webapp --> maindb : Reads product data,\nqueries categories,\nfilters products\n[Entity Framework 5]
+
+webapp .> memberdb : Validates credentials,\nmanages sessions\n[SQL Membership Provider]\n**MISSING CONNECTION**
+
+note right of webapp
   **Technology Stack**:
   - ASP.NET MVC 4
   - .NET Framework 4.5
@@ -45,32 +80,20 @@ note right of WebApp
   - Debug Mode: Enabled
 end note
 
-note right of MainDB
-  **Connection String**: CYCLE_STOREEntities
+note right of maindb
+  **Connection**: CYCLE_STOREEntities
   **Schema**: Production
   **Access Pattern**: Database-First EDMX
-  **Tables** (Known):
-  - Product
-  - ProductCategory
-  - ProductSubcategory
-  - ProductDescription
   **Status**: Placeholder credentials
 end note
 
-note right of MembershipDB
+note right of memberdb
   **Connection String**: ASPNetDB
   **Status**: MISCONFIGURATION
   Referenced in Web.config but
   connection string not defined
   **Provider**: SqlMembershipProvider
   **Application**: C1AdventureWorks
-end note
-
-note left of WebUser
-  **Authentication**: Forms-based
-  **Cookie**: ADVENTUREWORKS.AUTH
-  **Session**: Sliding expiration
-  **Login URL**: ~/Home/Login
 end note
 
 @enduml

@@ -1,43 +1,47 @@
 @startuml
 ' Syntax verified: 2025-10-30
 ' Integration Landscape Diagram
-' Shows all external integration points (current state)
 
 title Integration Landscape - Adventure Works Cycle Store
 
-skinparam componentStyle rectangle
-
-package "Adventure Works MVC Application" {
-  [Web Application] as app
-  [Forms Authentication] as auth
-  [SQL Membership Provider] as membership
+skinparam component {
+    BackgroundColor<<app>> #438DD5
+    BackgroundColor<<auth>> #85BBF0
+    FontColor black
 }
 
-database "CYCLE_STORE\nDatabase" as maindb {
-  [Product Tables]
-  [Category Tables]
-}
-
-database "ASPNetDB\nDatabase" as membershipdb {
-  [aspnet_Users]
-  [aspnet_Membership]
-  [aspnet_Applications]
-}
-
-cloud "AWS RDS" as aws {
-  maindb
-}
-
-cloud "Unknown Location" as unknown {
-  membershipdb
+skinparam database {
+    BackgroundColor #999999
+    FontColor white
 }
 
 actor "Web User" as user
 
+package "Adventure Works MVC Application" {
+  component [Web Application] as app <<app>>
+  component [Forms Authentication] as auth <<auth>>
+  component [SQL Membership Provider] as membership <<auth>>
+}
+
+cloud "AWS RDS" {
+  database "CYCLE_STORE\nDatabase" as maindb {
+    component [Product Tables]
+    component [Category Tables]
+  }
+}
+
+cloud "Unknown Location" {
+  database "ASPNetDB\nDatabase" as membershipdb {
+    component [aspnet_Users]
+    component [aspnet_Membership]
+    component [aspnet_Applications]
+  }
+}
+
 user --> app : HTTPS\n(Forms Auth Cookie)
 app --> auth : Authentication Request
 auth --> membership : Validate Credentials
-membership ..> membershipdb : Query User Data\n**MISSING CONNECTION**
+membership .> membershipdb : Query User Data\n**MISSING CONNECTION**
 app --> maindb : Entity Framework 5\nLINQ to Entities\n**CONFIRMED**
 
 note right of membershipdb
@@ -60,14 +64,14 @@ end note
 
 note bottom of app
   **No Legacy Integrations Found**:
-  ❌ No FTP/File integrations
-  ❌ No SOAP/WCF services
-  ❌ No REST API calls to external services
-  ❌ No Message Queuing (MSMQ)
-  ❌ No Windows Services
-  ❌ No Batch processes
-  ❌ No Email (SMTP) integration
-  ❌ No Third-party APIs
+  X No FTP/File integrations
+  X No SOAP/WCF services
+  X No REST API calls to external services
+  X No Message Queuing (MSMQ)
+  X No Windows Services
+  X No Batch processes
+  X No Email (SMTP) integration
+  X No Third-party APIs
 end note
 
 @enduml
