@@ -1,0 +1,114 @@
+@startuml
+' Syntax verified: 2025-10-30
+' C4 Level 3: MVC Request Pipeline Components
+' Shows the ASP.NET MVC pipeline and request flow components
+
+title C4 Level 3: MVC Request Pipeline Components
+
+!define COMPONENT_BG_COLOR #85BBF0
+!define EXTERNAL_COMPONENT_BG_COLOR #999999
+
+' Container boundary
+package "Web Application\n<size:10>[ASP.NET MVC 4 Container]</size>" {
+
+    ' Pipeline Components
+    package "HTTP Pipeline" {
+        rectangle "==Global.asax\n<size:10>[Application Entry]</size>\n\nApplication_Start()\nRegisters routes,\nfilters, Web API config" as GlobalAsax #COMPONENT_BG_COLOR
+
+        rectangle "==Route Config\n<size:10>[URL Routing]</size>\n\nMaps URLs to controllers\nDefault: {controller}/\n{action}/{id}" as RouteConfig #COMPONENT_BG_COLOR
+
+        rectangle "==Filter Config\n<size:10>[Global Filters]</size>\n\nHandleErrorAttribute\nfor unhandled exceptions" as FilterConfig #COMPONENT_BG_COLOR
+
+        rectangle "==Web API Config\n<size:10>[API Routing]</size>\n\napi/{controller}/{id}\n(NOT USED - no API\ncontrollers exist)" as ApiConfig #COMPONENT_BG_COLOR
+    }
+
+    ' Authentication Components
+    package "Authentication & Security" {
+        rectangle "==Forms Authentication\nModule\n<size:10>[HTTP Module]</size>\n\nValidates auth cookie\nRedirects to login\n30-day timeout" as FormsAuth #COMPONENT_BG_COLOR
+
+        rectangle "==SQL Membership\nProvider\n<size:10>[Membership Provider]</size>\n\nValidates credentials\nManages user accounts\nApplication:\nC1AdventureWorks" as Membership #EXTERNAL_COMPONENT_BG_COLOR
+
+        rectangle "==HandleError\nAttribute\n<size:10>[Exception Filter]</size>\n\nCatches unhandled\nexceptions globally" as ErrorFilter #COMPONENT_BG_COLOR
+    }
+
+    ' Controller Components
+    package "MVC Controllers" {
+        rectangle "==Controller\nFactory\n<size:10>[Factory]</size>\n\nInstantiates controllers\n(Default factory)" as ControllerFactory #COMPONENT_BG_COLOR
+
+        rectangle "==Action Invoker\n<size:10>[Invoker]</size>\n\nExecutes controller\naction methods" as ActionInvoker #COMPONENT_BG_COLOR
+
+        rectangle "==View Engine\n<size:10>[Razor Engine]</size>\n\nLocates and renders\n.cshtml views" as ViewEngine #COMPONENT_BG_COLOR
+    }
+}
+
+' External Systems
+database "==ASPNetDB\n<size:10>[SQL Server]</size>\n\nMembership database\n(Connection string\nMISSING)" as MembershipDB #EXTERNAL_COMPONENT_BG_COLOR
+
+' Request Flow
+GlobalAsax -down-> RouteConfig : "Registers\non startup"
+GlobalAsax -down-> FilterConfig : "Registers\non startup"
+GlobalAsax --> ApiConfig : "Registers\n(unused)"
+
+RouteConfig -down-> ControllerFactory : "Routes request\nto controller"
+FilterConfig --> ErrorFilter : "Adds to\nfilter pipeline"
+
+FormsAuth -down-> Membership : "Validates\ncredentials"
+Membership -down-> MembershipDB : "Queries user\ndata"
+
+ControllerFactory -down-> ActionInvoker : "Creates controller\nand invokes action"
+ActionInvoker --> ErrorFilter : "Executes through\nfilter pipeline"
+ActionInvoker -down-> ViewEngine : "Returns view\nresult"
+
+note right of GlobalAsax
+  **File**: Global.asax.cs
+  **Method**: Application_Start()
+  **Registers**:
+  - AreaRegistration
+  - WebApiConfig
+  - FilterConfig
+  - RouteConfig
+end note
+
+note right of RouteConfig
+  **File**: RouteConfig.cs
+  **Default Route**:
+  {controller}/{action}/{id}
+  **Defaults**:
+  controller = "Home"
+  action = "Default"
+end note
+
+note right of FormsAuth
+  **Configuration**: Web.config
+  **Cookie**: ADVENTUREWORKS.AUTH
+  **Login URL**: ~/Home/Login
+  **Timeout**: 30 days
+  **Sliding Expiration**: true
+  **Protection**: Encryption + Validation
+end note
+
+note right of Membership
+  **Provider**: SqlMembershipProvider
+  **Connection**: ASPNetDB
+  **Status**: MISCONFIGURATION
+  Connection string not defined
+  **Password Format**: Hashed
+  **Min Password Length**: 1
+end note
+
+note right of ErrorFilter
+  **Configuration**: FilterConfig.cs
+  **Registered Globally**: Yes
+  **Custom Error Pages**:
+  - 404 -> ~/Error
+  - 500 -> ~/Error
+end note
+
+note left of ApiConfig
+  **Status**: CONFIGURED BUT UNUSED
+  No ApiController classes found
+  Route template defined but
+  no endpoints implemented
+end note
+
+@enduml

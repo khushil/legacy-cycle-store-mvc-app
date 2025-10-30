@@ -1,0 +1,79 @@
+%% Syntax verified: 2025-10-30
+%% Data Flow Diagram - Request/Response Flow
+%% Shows how data flows through the application layers
+
+flowchart TD
+    subgraph Browser["Web Browser"]
+        User[User Action<br/>Click, Navigate]
+    end
+
+    subgraph IIS["IIS Express"]
+        FormsAuth[Forms Authentication<br/>Module]
+        Routing[MVC Routing<br/>Engine]
+    end
+
+    subgraph PresentationLayer["Presentation Layer"]
+        Controller[MVC Controller<br/>HomeController,<br/>SiteLayoutController]
+        ViewEngine[Razor View<br/>Engine]
+        ViewModel[View Model<br/>SiteLayoutModel]
+    end
+
+    subgraph BusinessLayer["Business Logic Layer"]
+        CategoryMgr[Category Manager<br/>static methods]
+        ProductMgr[Product Manager<br/>static methods]
+    end
+
+    subgraph DataLayer["Data Access Layer"]
+        Common[Common.DataEntities<br/>Static Factory]
+        DbContext[CYCLE_STOREEntities<br/>EF DbContext]
+        LINQ[LINQ to Entities<br/>Query Translation]
+    end
+
+    subgraph Database["SQL Server / AWS RDS"]
+        DB[(CYCLE_STORE<br/>Database)]
+    end
+
+    User -->|HTTP GET/POST| FormsAuth
+    FormsAuth -->|Authenticated| Routing
+    Routing -->|Route Match| Controller
+
+    Controller -->|Call Static Method| CategoryMgr
+    Controller -->|Call Static Method| ProductMgr
+
+    CategoryMgr -->|Access DataEntities| Common
+    ProductMgr -->|Access DataEntities| Common
+
+    Common -->|new CYCLE_STOREEntities| DbContext
+
+    DbContext -->|LINQ Query| LINQ
+    LINQ -->|SQL Query| DB
+
+    DB -->|Result Set| LINQ
+    LINQ -->|Entity Objects| DbContext
+    DbContext -->|IQueryable/List| ProductMgr
+    DbContext -->|IQueryable/List| CategoryMgr
+
+    CategoryMgr -->|Entity Data| Controller
+    ProductMgr -->|Entity Data| Controller
+
+    Controller -->|Populate| ViewModel
+    Controller -->|Return ViewResult| ViewEngine
+
+    ViewEngine -->|Render| ViewModel
+    ViewEngine -->|HTML Response| User
+
+    style User fill:#08427B,color:#fff
+    style Controller fill:#438DD5,color:#fff
+    style CategoryMgr fill:#85BBF0,color:#fff
+    style ProductMgr fill:#85BBF0,color:#fff
+    style DbContext fill:#85BBF0,color:#fff
+    style DB fill:#999,color:#fff
+
+    %% Notes
+    note1[Note: New DbContext<br/>created per request]
+    note2[Note: All queries<br/>use LINQ to Entities]
+    note3[Note: No caching<br/>implemented]
+
+    Common -.->|WARNING| note1
+    LINQ -.->|INFO| note2
+    CategoryMgr -.->|ISSUE| note3

@@ -1,0 +1,50 @@
+%% Syntax verified: 2025-10-30
+%% Entity Relationship Diagram - CYCLE_STORE Database
+%% Current data model relationships from Entity Framework EDMX
+
+erDiagram
+    ProductCategory ||--o{ ProductSubcategory : "has many"
+    ProductSubcategory ||--o{ Product : "categorizes"
+
+    ProductCategory {
+        int ProductCategoryID PK
+        string Name
+        guid rowguid
+        datetime ModifiedDate
+    }
+
+    ProductSubcategory {
+        int ProductSubcategoryID PK
+        int ProductCategoryID FK
+        string Name
+        guid rowguid
+        datetime ModifiedDate
+    }
+
+    Product {
+        int ProductID PK
+        string Name
+        string ProductNumber
+        bool MakeFlag
+        bool FinishedGoodsFlag
+        string Color "nullable"
+        short SafetyStockLevel
+        short ReorderPoint
+        decimal StandardCost
+        decimal ListPrice
+        string Size "nullable"
+        string SizeUnitMeasureCode "nullable"
+        string WeightUnitMeasureCode "nullable"
+        decimal Weight "nullable"
+        int DaysToManufacture
+        string ProductLine "nullable"
+        string Class "nullable"
+        string Style "nullable"
+        int ProductSubcategoryID FK "nullable"
+        int ProductModelID FK "nullable"
+        datetime SellStartDate
+        datetime SellEndDate "nullable"
+        datetime DiscontinuedDate "nullable"
+        guid rowguid
+        datetime ModifiedDate
+    }

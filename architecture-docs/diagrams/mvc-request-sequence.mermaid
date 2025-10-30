@@ -1,0 +1,63 @@
+%% Syntax verified: 2025-10-30
+%% MVC Request Sequence Diagram
+%% Shows typical request/response flow through the MVC pipeline
+
+sequenceDiagram
+    participant Browser
+    participant IIS as IIS Express
+    participant Auth as Forms Auth Module
+    participant Router as MVC Router
+    participant Controller as SiteLayoutController
+    participant Manager as CategoryManager
+    participant Common as Common.DataEntities
+    participant DbContext as CYCLE_STOREEntities
+    participant Database as SQL Server
+    participant ViewEngine as Razor Engine
+
+    Browser->>IIS: GET /SiteLayout/FooterLayout
+    IIS->>Auth: Check authentication cookie
+    Auth->>Auth: Validate ADVENTUREWORKS.AUTH
+    Auth->>Router: Authentication successful
+    Router->>Router: Match route pattern<br/>{controller}/{action}
+    Router->>Controller: Invoke FooterLayout()
+
+    activate Controller
+    Controller->>Controller: new SiteLayoutModel()
+    Controller->>Manager: CategoryManager.GetMainCategories()
+
+    activate Manager
+    Manager->>Common: Access DataEntities property
+
+    activate Common
+    Common->>DbContext: new CYCLE_STOREEntities()
+    Common-->>Manager: Return new DbContext
+    deactivate Common
+
+    Manager->>DbContext: Query ProductCategories
+
+    activate DbContext
+    DbContext->>DbContext: Build LINQ query<br/>from cat in ProductCategories<br/>select cat
+    DbContext->>Database: Execute SQL SELECT<br/>FROM ProductCategory
+
+    activate Database
+    Database-->>DbContext: Result set (rows)
+    deactivate Database
+
+    DbContext->>DbContext: Materialize entities<br/>.ToList()
+    DbContext-->>Manager: List<ProductCategory>
+    deactivate DbContext
+
+    Manager-->>Controller: List<ProductCategory>
+    deactivate Manager
+
+    Controller->>Controller: Footer.ProductCategories = categories
+    Controller->>ViewEngine: return View(Footer)
+    deactivate Controller
+
+    activate ViewEngine
+    ViewEngine->>ViewEngine: Locate view<br/>Views/SiteLayout/FooterLayout.cshtml
+    ViewEngine->>ViewEngine: Render Razor syntax<br/>@Model.ProductCategories
+    ViewEngine-->>Browser: HTML Response
+    deactivate ViewEngine
+
+    Note over Browser,Database: Total: ~50-200ms<br/>(No caching, DB query every request)

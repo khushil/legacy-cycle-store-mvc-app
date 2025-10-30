@@ -1,0 +1,43 @@
+@startuml
+' Syntax verified: 2025-10-30
+' C4 Level 1: System Context Diagram
+' Shows Adventure Works Cycle Store system and its external actors/systems
+
+title C4 Level 1: System Context Diagram - Adventure Works Cycle Store
+
+' C4 Colors and styles
+!define PERSON_BG_COLOR #08427B
+!define SYSTEM_BG_COLOR #1168BD
+!define EXTERNAL_SYSTEM_BG_COLOR #999999
+
+' Define actors and systems
+rectangle "==Web User\n<size:10>[Person]</size>\n\nCustomer browsing and\nshopping for cycles" as WebUser #PERSON_BG_COLOR
+rectangle "==Adventure Works\nCycle Store\n<size:10>[ASP.NET MVC 4 Application]</size>\n\nProvides e-commerce functionality\nfor browsing and purchasing\ncycles and accessories" as MainSystem #SYSTEM_BG_COLOR
+database "==CYCLE_STORE\nDatabase\n<size:10>[SQL Server on AWS RDS]</size>\n\nStores product catalog,\ncategories, subcategories,\nand user membership data" as Database #EXTERNAL_SYSTEM_BG_COLOR
+
+' Relationships
+WebUser -down-> MainSystem : "Browses products,\nviews categories\n<size:10>[HTTPS]</size>"
+MainSystem -down-> Database : "Reads product data,\nauthenticates users\n<size:10>[Entity Framework 5]</size>"
+
+note right of MainSystem
+  **Current State**: 2025-10-30
+  **Technology**: ASP.NET MVC 4
+  **.NET Framework**: 4.5
+  **Hosting**: IIS Express (Port 55185)
+  **Authentication**: Forms Authentication
+end note
+
+note right of Database
+  **Location**: AWS RDS
+  **Connection**: CYCLE_STOREEntities
+  **Access Pattern**: Entity Framework
+  **Database-First Approach**: EDMX Model
+end note
+
+note left of WebUser
+  **Authentication**: Forms-based
+  **Session Timeout**: 30 days
+  **Membership Provider**: SQL-based
+end note
+
+@enduml
